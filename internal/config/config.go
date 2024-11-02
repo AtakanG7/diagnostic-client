@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"time"
+)
 
 type Config struct {
 	DatabaseURL       string
@@ -10,6 +13,9 @@ type Config struct {
 	NetworkBufferSize int
 	BatchSize         int
 	StreamBatchSize   int // How many packets to send in one websocket message
+	ProcessingWorkers int
+	MaxBackoff        time.Duration
+	InitialBackoff    time.Duration
 }
 
 func Load() (*Config, error) {
@@ -19,7 +25,7 @@ func Load() (*Config, error) {
 		AgentAddr:         getEnv("AGENT_ADDR", ":8081"),
 		LogBufferSize:     10000, // Larger buffer for logs
 		NetworkBufferSize: 50000, // Larger buffer for network packets
-		BatchSize:         1000,  // Database batch size
+		BatchSize:         10000, // Database batch size
 		StreamBatchSize:   100,   // WebSocket stream batch size
 	}, nil
 }

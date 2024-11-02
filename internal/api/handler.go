@@ -2,7 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"diagnostic-client/internal/db"
@@ -16,19 +20,66 @@ func NewHandler(db *db.DB) *Handler {
 	return &Handler{db: db}
 }
 
+func normalizePath(path string) string {
+	// Ensure path starts with /
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	// Remove trailing slash unless it's the root path
+	if path != "/" && strings.HasSuffix(path, "/") {
+		path = path[:len(path)-1]
+	}
+
+	return path
+}
+
+// internal/api/handler.go
 func (h *Handler) GetFiles(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 	if path == "" {
 		path = "/"
+	} else {
+		path = normalizePath(path)
 	}
 
-	files, err := h.db.GetFileTree(r.Context(), path)
+	// Get depth from query params, default to 1 if not specified
+	depth := 1
+	if depthStr := r.URL.Query().Get("depth"); depthStr != "" {
+		if d, err := strconv.Atoi(depthStr); err == nil {
+			depth = d
+		}
+	}
+
+	// Limit maximum depth to prevent excessive recursion
+	if depth > 10 {
+		depth = 10
+	}
+
+	log.Printf("[API] Getting file tree for path: %s with depth: %d", path, depth)
+
+	files, err := h.db.GetFileTree(r.Context(), path, depth)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[API] Error getting file tree: %v", err)
+		http.Error(w, fmt.Sprintf("Error getting file tree: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(files)
+	if len(files) == 0 {
+		// Return empty array instead of null
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
+	log.Printf("[API] Found %d files at path: %s", len(files), path)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(files); err != nil {
+		log.Printf("[API] Error encoding response: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) GetLogs(w http.ResponseWriter, r *http.Request) {

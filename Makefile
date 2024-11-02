@@ -19,7 +19,7 @@ clean:
 
 # Database initialization
 init-db:
-	sudo @psql -h localhost -U postgres -f internal/db/schema.sql
+	@psql -h localhost -U postgres -f internal/db/schema.sql
 
 # Docker helpers
 docker-postgres:

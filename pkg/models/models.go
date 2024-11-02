@@ -4,14 +4,13 @@ import "time"
 
 type FileNode struct {
 	Path        string    `json:"path"`
+	ParentPath  string    `json:"parent_path"`
 	Name        string    `json:"name"`
-	Type        string    `json:"type"`
+	IsDirectory bool      `json:"is_directory"`
 	Size        int64     `json:"size"`
 	ModTime     time.Time `json:"mod_time"`
-	HasChildren bool      `json:"has_children"`
-	ChildCount  int       `json:"children_count"`
+	IsGzipped   bool      `json:"is_gzipped"`
 	IsScraped   bool      `json:"is_scraped"`
-	ParentPath  string    `json:"-"`
 }
 
 type LogEntry struct {
@@ -33,4 +32,22 @@ type NetworkPacket struct {
 	Length      int       `json:"length"`
 	PayloadSize int       `json:"payload_size"`
 	TCPFlags    string    `json:"tcp_flags,omitempty"`
+}
+
+type NetworkStats struct {
+	PacketCount        int64            `json:"packet_count"`
+	TotalBytes         int64            `json:"total_bytes"`
+	AvgPacketSize      float64          `json:"avg_packet_size"`
+	UniqueSources      int64            `json:"unique_sources"`
+	UniqueDestinations int64            `json:"unique_destinations"`
+	ProtocolCount      int64            `json:"protocol_count"`
+	ProtocolStats      map[string]int64 `json:"protocol_stats"`
+	Packets            []NetworkPacket  `json:"packets"`
+}
+
+type TopNetworkStats struct {
+	TopSources      map[string]int64 `json:"top_sources"`
+	TopDestinations map[string]int64 `json:"top_destinations"`
+	TopProtocols    map[string]int64 `json:"top_protocols"`
+	TopPorts        map[string]int64 `json:"top_ports"`
 }
